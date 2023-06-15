@@ -1,23 +1,23 @@
 import express from "express";                                    // Importamos el modulo de servidor en express.
 import { Server } from 'socket.io';
 import handlebars from "express-handlebars";
-import { __dirname, __filename } from "./utils.js";                           // Importamos la variable __dirname, de la configuracion de MULTER para poder subir archivos, LA variable dirname, es una variable de Node con un path aboluto a la carpeta que le indicamos.
+import { __dirname, __filename, connectMongo, connectSocket} from "./utils.js";                           // Importamos la variable __dirname, de la configuracion de MULTER para poder subir archivos, LA variable dirname, es una variable de Node con un path aboluto a la carpeta que le indicamos.
 import path from "path";
 import { productsRouter } from "./routes/products.router.js";     // Importamos los endpoint Productos.
 import { cartsRouter } from "./routes/carts.router.js";           // Importamos los endpoint Carts.
 import { viewsRouter } from "./routes/views.router.js";
-import { ProductManager } from "./productManager.js";
+import { chatRouter } from "./routes/chat.router.js"
+
+
 import http from "http";
+
+
 
 
 const app = express();                                              // Asignamos la funcionaldiad del servidor en la app express.
 const port = 8080;   
 const httpServer = http.createServer(app);                          // Asignamos el N° de puerto a una varibale. 
 const socketServer = new Server(httpServer);                        // Guardamos nuestro servidor socket en una variable
-const productManager = new ProductManager("./products.json");
-
-
-
 
 
 // Middleware 
@@ -34,45 +34,12 @@ app.set("view engine", "handlebars");               // Indicamos que el motor qu
 app.use("/api/products", productsRouter);                       // Le decimos a la app, que use todo lo que esta en la ruta api/products, lo maneja productsRouter.
 app.use("/api/carts", cartsRouter);                             // Le decimos a la app, que use todo lo que esta en la ruta api/carts, lo maneja cartsRouter.
 app.use("/", viewsRouter);
-app.use("/realTimeProducts", viewsRouter);
+app.use("/chat", chatRouter);
+
 
 app.listen(port, ()=> {
     console.log(`App listen on port: ${port}  http://localhost:${port} `);  // Le decimos al servidor en que puerto recivir las peticiones.
 });
-
-socketServer.on("connection", (socket) => {
-    console.log(`Nueva coneccion establecida con el cliene ID + ${socket.id}`);
-
-    // Recivimos del Back
-    socket.on("front a servidor", async (newProduct) => {
-        try{
-            await productManager.addProduct(newProduct);
-            const dataProducts = await productManager.getProducts();
-
-            // Responde el servidor
-            socketServer.emit("updatedProducts", {dataProducts})
-        }
-        catch (error) {
-            console.log(error);
-        }
-    });
-
-    socket.on("deleteProduct", async (id) => {
-        try {
-            const parseId = parseInt(id, 10); 
-            await productManager.deleteProduct(parseId);
-            socket.emit('productDeleted', { message: 'Producto eliminado exitosamente' })
-            
-            // Brodcast y actualizacion a todos los clientes
-            const dataProducts =  productManager.getProducts();
-            socketServer.emit("updatedProducts", { dataProducts });
-        } catch (error) {
-            console.log("Error al eliminar producto", error);
-            socket.emit('productDeleteError', { error: 'Ocurrió un error al eliminar el producto' });
-        }
-    });
-});
-
 
 
 app.get("*", (req, res) => {                                    // Si no machea con ninguna ruta entra a esta middleware default.
@@ -82,3 +49,7 @@ app.get("*", (req, res) => {                                    // Si no machea 
         data: {},                                               // En caso positivo serian los datos.
     });
 });
+
+
+connectMongo();
+connectSocket(httpServer);

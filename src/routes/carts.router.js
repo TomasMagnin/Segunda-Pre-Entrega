@@ -1,56 +1,92 @@
 import express from "express";
-import { ProductManager } from "../productManager.js"
+import CartService from '../services/carts.service.js';
+const cartService = new CartService();
 
 export const cartsRouter = express.Router();
 
 
-cartsRouter.post("/", async(req, res) => {
-    const data = req.body;
-    const instanceManager = new ProductManager("./src/carts.json");
-    const flagFound = await instanceManager.addCart(data);
-    flagFound ? res.status(200).send('Product added successfully') : res.status(400).send('Error in uploaded data');
-});
-
-
-cartsRouter.get("/:cid", async (req, res) => {
-    const instanceManager = new ProductManager("./src/carts.json");
-    const viewCart = await instanceManager.getProducts();
-    const { cid } = req.params;
-    const idFound = viewCart.find(element => element.id == cid);
-    idFound ?  res.status(200).send(idFound) : res.status(404).send('Not Found');
-
-});
-
-
-cartsRouter.post("/:cid/product/:pid", async (req,res) => {
-    let productsCart = req.body;
-    let { cid } = req.params;
-    cid = parseInt(cid);
-    let { pid } = req.params;
-    pid = parseInt(pid);
-    const instanceManager = new ProductManager("./src/carts.json");     // Instanciamos una clase, pasando como parametro la ruta que tiene el archivo carts.json con los carritos de compra.
-    const viewCart = await instanceManager.getProducts();
-    const cartFound = viewCart.find(item => item.id == cid);            // Bucamos el carrito, por el id que recivimos por params, usando la funcion find cuando encuentre la igualdad.
-    if(cartFound) {                                                                 // Preguntamos si se encontro la busqueda anterior.
-        const productFound = cartFound.products.find(item => item.product == pid);  // Buscamos si se encuentra el ID de producto, dentro del carrito.
-        let newProductCart = [];                                                    // Creamo un array, para los productos del carrito.
-        if(productFound){                                                           // Preguntamos si ya existia ese producto en el carrito.        
-            let newQuantity = productsCart.quantity + productFound.quantity         // Creamos la variable nueva cantidad y sumamos la cantidad del producto que ya estaba mas la del nuevo producto.
-            newProductCart.push(...cartFound.products);                             // Desparramamos las propiedades del carrito encontrado en el array.
-            newProductCart.map(item => {                                            // Creamos un nuevo array a partir de la funcion que le pasamos.
-                if(element.product == productsCart.product){
-                    element.quantity = newQuantity;
-                }
-            });
-        }
-        else {                                                                      
-            newProductCart.push(...cartFound.products);                             // Desparramamos las propiedades del producto para insertarla en el array.
-            newProductCart.push( productsCart );                                    // Introducimos las propiedades enviadas en el body
-        }
-        const flagFound = await instanceManager.updateProduct(cid, { "products" : newProductCart});
-        flagFound ? res.status(200).send("Product added/modified succesfullly") : res.status(404).send("not Found");
-    } 
-    else{
-        res.status(404).send("Not Found");
+cartsRouter.post("/", async (req, res) => {
+    try {
+      const newCart = await cartService.createOne();
+      res.status(201).json(newCart);
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Internal Server Error" });
     }
-});
+  });
+  
+  cartsRouter.get("/:cid", async (req, res) => {
+    try {
+      const cartId = req.params.cid;
+      const cart = await cartService.get(cartId); //.populate('products');
+      res.status(200).json(cart);
+    } catch (error) {
+      res.status(404).json({ message: error.message });
+    }
+  });
+  
+  cartsRouter.post("/:cid/product/:pid", async (req, res) => {
+    try {
+      const { cid, pid } = req.params;
+      console.log(cid, pid);
+      const cart = await cartService.addProductToCart(cid, pid);
+      res.status(200).json(cart);
+    } catch (error) {
+      res.status(404).json({ error: error.message });
+    }
+  });
+  
+  cartsRouter.delete("/:cid/products/:pid", async (req, res) => {
+    try {
+      const { cid, pid } = req.params;
+      const cart = await cartService.removeProduct(cid, pid);
+      res
+        .status(200)
+        .json({ status: "success", message: "Product removed from cart", cart });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: "error", message: "Internal server error" });
+    }
+  });
+  
+  cartsRouter.put("/:cid", async (req, res) => {
+    try {
+      const { cid } = req.params;
+      const { products } = req.body;
+      const cart = await cartService.updateCart(cid, products);
+      res
+        .status(200)
+        .json({ status: "success", message: "Cart updated successfully", cart });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: "error", message: "Internal server error" });
+    }
+  });
+  
+  cartsRouter.put("/:cid/products/:pid", async (req, res) => {
+    try {
+      const { cid, pid } = req.params;
+      const { quantity } = req.body;
+      const cart = await cartService.updateProductQuantity(cid, pid, quantity);
+      res
+        .status(200)
+        .json({ status: "success", message: "Product quantity updated", cart });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: "error", message: "Internal server error" });
+    }
+  });
+  
+  cartsRouter.delete("/:cid", async (req, res) => {
+    try {
+      const { cid } = req.params;
+      await cartService.clearCart(cid);
+      res
+        .status(200)
+        .json({ status: "success", message: "Cart cleared successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: "error", message: "Internal server error" });
+    }
+  });
+  
