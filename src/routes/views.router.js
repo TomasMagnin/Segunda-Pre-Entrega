@@ -1,12 +1,12 @@
 import express from "express";
-import ProductService from '../services/products.service.js';
-import CartService from '../services/carts.service.js';
+import { ProductService } from '../services/products.service.js';
+import { CartService } from '../services/carts.service.js';
 import { ProductModel  } from "../DAO/models/products.model.js";
-const productService = new new ProductService();
+const productService = new ProductService();
 const cartService  = new CartService();
 
 
-const viewsRouter = express.Router();
+export const viewsRouter = express.Router();
 
 
 viewsRouter.get("/", async (req, res) => {
@@ -14,7 +14,6 @@ viewsRouter.get("/", async (req, res) => {
       const { limit = 10, page = 1, sort, query } = req.query;
       const queryParams = { limit, page, sort, query };
       const products = await productService.get(queryParams);
-      console.log(products); //BORRAR
       return res.status(200).render("home", { products });
     } catch (err) {
       console.error(err);

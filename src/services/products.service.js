@@ -1,6 +1,6 @@
 import { ProductModel  } from "../DAO/models/products.model.js";
 
-export class ProductModel  {
+export class ProductService  {
 
     validate(title, description, price, thumbnail, code, stock, category){
         if (!title || !description || !price || !thumbnail || !code || !stock || !category) {

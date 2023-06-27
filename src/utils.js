@@ -60,9 +60,7 @@ export const __dirname = path.dirname(__filename);
  
  /* ----------------- SOCKET ------------ */
  import { Server } from "socket.io";                 // Importamos el servidor Socket.
- import { ProductModel  } from "../DAO/models/products.model.js";
- import { CartModel   } from "../DAO/models/cartModel.model.js";
- import { ChatModel   } from "../DAO/models/chats.model.js";
+ import { ChatModel   } from "../src/DAO/models/chats.model.js";
  
  export function connectSocket(httpServer) {         // El servidor Socket toma como argumento a un servidor HTTP existente, al cual se conecta
  const socketServer = new Server(httpServer);        // Creamos un nuevo objeto servidor de Socket y lo guardamos en una variable. El objeto es una representacion del servidor socket. 

@@ -1,5 +1,5 @@
 import express from "express";
-import CartService from '../services/carts.service.js';
+import { CartService } from '../services/carts.service.js';
 const cartService = new CartService();
 
 export const cartsRouter = express.Router();
